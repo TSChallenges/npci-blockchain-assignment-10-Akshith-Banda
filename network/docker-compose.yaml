@@ -1,4 +1,11 @@
-version: '2.4'
+version: '3.7'
+
+volumes:
+  orderer.pharma.com:
+  peer0.cipla.pharma.com:
+  peer0.medlife.pharma.com:
+  peer0.apollo.pharma.com:
+  peer0.cdsco.pharma.com:
 
 networks:
   pharma-net:
@@ -6,23 +13,68 @@ networks:
 services:
   # Minimal Orderer
   orderer.pharma.com:
+    container_name: orderer.example.com  
     image: hyperledger/fabric-orderer:2.4
     environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
       - ORDERER_GENERAL_LISTENPORT=7050
       - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+    working_dir: /root
+    command: orderer
+    volumes:
+        - ./organizations/ordererOrganizations/pharma.com/orderers/orderer.pharma.com/msp:/var/hyperledger/orderer/msp
+        - ./organizations/ordererOrganizations/pharma.com/orderers/orderer.pharma.com/tls/:/var/hyperledger/orderer/tls
+        - orderer.pharma.com:/var/hyperledger/production/orderer      
     ports:
       - 7050:7050
+      - 7053:7053      
     networks:
       - pharma-net
 
   # Manufacturer (Cipla)
   peer0.cipla.pharma.com:
+    container_name: peer0.cipla.pharma.com
     image: hyperledger/fabric-peer:2.4
     environment:
+      - CORE_PEER_TLS_ENABLED=true
+      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt          
       - CORE_PEER_ID=peer0.cipla.pharma.com
       - CORE_PEER_ADDRESS=peer0.cipla.pharma.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.cipla.pharma.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.cipla.pharma.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.cipla.pharma.com:7051      
       - CORE_PEER_LOCALMSPID=CiplaMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
       - CORE_LEDGER_STATE_STATEDATABASE=goleveldb
+    volumes:
+      - ./peercfg:/etc/hyperledger/peercfg
+      - ./organizations/peerOrganizations/cipla.pharma.com/peers/peer0.cipla.pharma.com:/etc/hyperledger/fabric
+      - peer0.cipla.pharma.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start      
     ports:
       - 7051:7051
     depends_on:
@@ -30,15 +82,104 @@ services:
     networks:
       - pharma-net
 
-  # Regulator (CDSCO)
-  peer0.cdsco.pharma.com:
+  # Distributor (Medlife)
+  peer0.medlife.pharma.com:
+    container_name: peer0.medlife.pharma.com
     image: hyperledger/fabric-peer:2.4
     environment:
-      - CORE_PEER_ID=peer0.cdsco.pharma.com
-      - CORE_PEER_ADDRESS=peer0.cdsco.pharma.com:9051
-      - CORE_PEER_LOCALMSPID=CDSCOMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt          
+      - CORE_PEER_ID=peer0.medlife.pharma.com
+      - CORE_PEER_ADDRESS=peer0.medlife.pharma.com:8051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.medlife.pharma.com:8052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.medlife.pharma.com:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.medlife.pharma.com:8051      
+      - CORE_PEER_LOCALMSPID=MedlifeMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
       - CORE_LEDGER_STATE_STATEDATABASE=goleveldb
+    volumes:
+      - ./peercfg:/etc/hyperledger/peercfg
+      - ./organizations/peerOrganizations/medlife.pharma.com/peers/peer0.medlife.pharma.com:/etc/hyperledger/fabric
+      - peer0.medlife.pharma.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start      
+    ports:
+      - 8051:8051
+    depends_on:
+      - orderer.pharma.com
+    networks:
+      - pharma-net
+
+  # Pharmacy (appollo)
+  peer0.apollo.pharma.com:
+    container_name: peer0.apollo.pharma.com
+    image: hyperledger/fabric-peer:2.4
+    environment:
+      - CORE_PEER_TLS_ENABLED=true
+      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt          
+      - CORE_PEER_ID=peer0.apollo.pharma.com
+      - CORE_PEER_ADDRESS=peer0.apollo.pharma.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.apollo.pharma.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.apollo.pharma.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.apollo.pharma.com:9051      
+      - CORE_PEER_LOCALMSPID=ApolloMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_STATEDATABASE=goleveldb
+    volumes:
+      - ./peercfg:/etc/hyperledger/peercfg
+      - ./organizations/peerOrganizations/apollo.pharma.com/peers/peer0.apollo.pharma.com:/etc/hyperledger/fabric
+      - peer0.apollo.pharma.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start      
     ports:
       - 9051:9051
+    depends_on:
+      - orderer.pharma.com
+    networks:
+      - pharma-net
+
+  # Regulator (cdsco)
+  peer0.cdsco.pharma.com:
+    container_name: peer0.cdsco.pharma.com
+    image: hyperledger/fabric-peer:2.4
+    environment:
+      - CORE_PEER_TLS_ENABLED=true
+      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt          
+      - CORE_PEER_ID=peer0.cdsco.pharma.com
+      - CORE_PEER_ADDRESS=peer0.cdsco.pharma.com:10051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:10051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.cdsco.pharma.com:10052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:10052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.cdsco.pharma.com:10051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.cdsco.pharma.com:10051      
+      - CORE_PEER_LOCALMSPID=CDSCOMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_LEDGER_STATE_STATEDATABASE=goleveldb
+    volumes:
+      - ./peercfg:/etc/hyperledger/peercfg
+      - ./organizations/peerOrganizations/cdsco.pharma.com/peers/peer0.cdsco.pharma.com:/etc/hyperledger/fabric
+      - peer0.cdsco.pharma.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start      
+    ports:
+      - 10051:10051
+    depends_on:
+      - orderer.pharma.com
     networks:
       - pharma-net
