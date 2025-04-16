@@ -3,12 +3,15 @@ OrdererOrgs:
     Domain: pharma.com
     Specs:
       - Hostname: orderer
-
+        SANS:
+          - localhost
 PeerOrgs:
   - Name: Cipla
     Domain: cipla.pharma.com
     Template:
       Count: 1
+      SANS:
+        - localhost      
     Users:
       Count: 1
 
@@ -16,6 +19,8 @@ PeerOrgs:
     Domain: medlife.pharma.com
     Template:
       Count: 1
+      SANS:
+        - localhost      
     Users:
       Count: 1
 
@@ -23,6 +28,8 @@ PeerOrgs:
     Domain: apollo.pharma.com
     Template:
       Count: 1
+      SANS:
+        - localhost
     Users:
       Count: 1
 
@@ -30,5 +37,7 @@ PeerOrgs:
     Domain: cdsco.pharma.com
     Template:
       Count: 1
+      SANS:
+        - localhost
     Users:
       Count: 1

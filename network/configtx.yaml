@@ -2,31 +2,170 @@ Organizations:
   - &OrdererOrg
     Name: OrdererMSP
     ID: OrdererMSP
-    MSPDir: ../organizations/ordererOrganizations/pharma.com/msp
+    MSPDir: ./organizations/ordererOrganizations/pharma.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.pharma.com:7050        
 
   - &Cipla
     Name: CiplaMSP
     ID: CiplaMSP
-    MSPDir: ../organizations/peerOrganizations/cipla.pharma.com/msp
+    MSPDir: ./organizations/peerOrganizations/cipla.pharma.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('CiplaMSP.admin', 'CiplaMSP.peer', 'CiplaMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('CiplaMSP.admin', 'CiplaMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('CiplaMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('CiplaMSP.peer')"
 
   - &Medlife
     Name: MedlifeMSP
     ID: MedlifeMSP
-    MSPDir: ../organizations/peerOrganizations/medlife.pharma.com/msp
-
+    MSPDir: ./organizations/peerOrganizations/medlife.pharma.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('MedlifeMSP.admin', 'MedlifeMSP.peer', 'MedlifeMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('MedlifeMSP.admin', 'MedlifeMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('MedlifeMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('MedlifeMSP.peer')"
+        
   - &Apollo
     Name: ApolloMSP
     ID: ApolloMSP
-    MSPDir: ../organizations/peerOrganizations/apollo.pharma.com/msp
+    MSPDir: ./organizations/peerOrganizations/apollo.pharma.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ApolloMSP.admin', 'ApolloMSP.peer', 'ApolloMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ApolloMSP.admin', 'ApolloMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ApolloMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ApolloMSP.peer')"
 
   - &CDSCO
     Name: CDSCOMSP
     ID: CDSCOMSP
-    MSPDir: ../organizations/peerOrganizations/cdsco.pharma.com/msp
-
+    MSPDir: ./organizations/peerOrganizations/cdsco.pharma.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('CDSCOMSP.admin', 'CDSCOMSP.peer', 'CDSCOMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('CDSCOMSP.admin', 'CDSCOMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('CDSCOMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('CDSCOMSP.peer')"    
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+Orderer: &OrdererDefaults
+  Addresses:
+    - orderer.pharma.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    # BlockValidation specifies what signatures must be included in the block
+    # from the orderer for the peer to validate it.
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
 Profiles:
   PharmaChannel:
-    Consortium: SampleConsortium
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      OrdererType: etcdraft
+      EtcdRaft:
+        Consenters:
+          - Host: orderer.pharma.com
+            Port: 7050
+            ClientTLSCert: ./organizations/ordererOrganizations/pharma.com/orderers/orderer.pharma.com/tls/server.crt
+            ServerTLSCert: ./organizations/ordererOrganizations/pharma.com/orderers/orderer.pharma.com/tls/server.crt
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
     Application:
       <<: *ApplicationDefaults
       Organizations:
@@ -34,3 +173,4 @@ Profiles:
         - *Medlife
         - *Apollo
         - *CDSCO
+      Capabilities: *ApplicationCapabilities
