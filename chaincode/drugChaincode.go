@@ -132,6 +132,42 @@ func (s *SmartContract) ShipDrug(ctx contractapi.TransactionContextInterface, dr
 	return nil
 }
 
+func (s *SmartContract) ReceiveDrug(ctx contractapi.TransactionContextInterface, drugID string) error {
+	clientMsp, err := ctx.GetClientIdentity().GetMSPID()
+	if err != nil {
+		return err
+	}
+
+	drugBytes, err := ctx.GetStub().GetState(drugID)
+	if err != nil {
+		return err
+	}
+	var drug = &Drug{}
+	err = json.Unmarshal(drugBytes, drug)
+	if err != nil {
+		return err
+	}
+
+	drug.CurrentOwner = clientMsp
+	drug.History = append(drug.History, fmt.Sprintf("%s|%s|%s|%s|%s", timestamp(), "Received", clientMsp, clientMsp, "received the drug"))
+
+	drugBytes, err = json.Marshal(drug)
+	if err != nil {
+		return err
+	}
+
+	err = ctx.GetStub().PutState(drugID, drugBytes)
+	if err != nil {
+		return err
+	}
+
+	err = ctx.GetStub().SetEvent("receivedDrug", drugBytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // ============== REGULATOR FUNCTIONS ==============
 func (s *SmartContract) RecallDrug(ctx contractapi.TransactionContextInterface, drugID string, reason string) error {
 	// TODO: Verify caller is CDSCOMSP
